@@ -1,3 +1,5 @@
+.vscode/
+src/Makefile
 *.o
 *.ppu
 ludwig
