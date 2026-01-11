@@ -647,7 +647,7 @@ STRLEN_RANGE      *outlen;
 
     *outlen = 0;
     do {
-        if (fyle->idx == fyle->len) {
+        if (fyle->idx >= fyle->len) {
             fyle->len = read(fyle->fd, fyle->buf, MAX_STRLEN);
             fyle->idx = 0;
         }
