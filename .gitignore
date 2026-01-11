@@ -4,3 +4,6 @@ src/Makefile
 *.ppu
 ludwig
 *~*
+src/Makefile
+.vscode/
+system-test/__pycache__/
