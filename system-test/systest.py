@@ -1,10 +1,10 @@
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, Tuple, Optional, Sequence
 from conftest import ludwig_path
-
 
 def _write_files(base_path: str, files: Dict[str, str]) -> None:
     for relpath, content in files.items():
@@ -83,13 +83,20 @@ def run_in_sandbox(
         err = proc.stderr.decode("utf-8", errors="replace")
         return files_after, returncode, out.splitlines(), err.splitlines()
 
-def simple_edit_test(cmd: str, infile: str, outfile: str) -> None:
+def simple_edit_test(
+    cmd: str,
+    infile: str,
+    outfile: str,
+    argv: Optional[Sequence[str]] = None,
+    env: Optional[dict] = None,
+) -> None:
     inlines = infile.count('\n')
     outlines = outfile.count('\n')
     files, exit, out, err = run_in_sandbox(
         { "test_file": infile },
         cmd,
-        ludwig_path(), [ "test_file" ]
+        ludwig_path(), (list(argv) if argv else []) + [ "test_file" ],
+        env=env
     )
     assert files.keys() == {"test_file", "test_file~1"}
     assert files["test_file~1"] == infile
@@ -106,12 +113,12 @@ def simple_edit_test(cmd: str, infile: str, outfile: str) -> None:
         assert out[1].endswith(f"/test_file created ({outlines} lines written).")
     assert err == []
 
-def unmodified_test(cmd: str, infile: str) -> None:
+def unmodified_test(cmd: str, infile: str, argv: Optional[Sequence[str]] = None) -> None:
     inlines = infile.count('\n')
     files, exit, out, err = run_in_sandbox(
         { "test_file": infile },
         cmd,
-        ludwig_path(), [ "test_file" ]
+        ludwig_path(), (list(argv) if argv else []) + [ "test_file" ]
     )
     assert files.keys() == {"test_file"}
     assert files["test_file"] == infile
@@ -123,12 +130,12 @@ def unmodified_test(cmd: str, infile: str) -> None:
         assert out[0].endswith(f"/test_file closed ({inlines} lines read).")
     assert err == []
 
-def _failed_edit(cmd: str, infile: str, what: str) -> None:
+def _failed_edit(cmd: str, infile: str, what: str, argv: Optional[Sequence[str]] = None) -> None:
     inlines = infile.count('\n')
     files, exit, out, err = run_in_sandbox(
         { "test_file": infile },
         cmd,
-        ludwig_path(), [ "test_file" ]
+        ludwig_path(), (list(argv) if argv else []) + [ "test_file" ]
     )
     assert files.keys() == {"test_file"}
     assert files["test_file"] == infile
@@ -141,8 +148,8 @@ def _failed_edit(cmd: str, infile: str, what: str) -> None:
         assert out[1].endswith(f"/test_file closed ({inlines} lines read).")
     assert err == []
 
-def syntax_error(cmd: str, infile: str = "") -> None:
-    _failed_edit(cmd, infile, "Syntax error.")
+def syntax_error(cmd: str, infile: str = "", argv: Optional[Sequence[str]] = None) -> None:
+    _failed_edit(cmd, infile, "Syntax error.", argv)
 
-def command_failed(cmd: str, infile: str = "") -> None:
-    _failed_edit(cmd, infile, "COMMAND FAILED")
+def command_failed(cmd: str, infile: str = "", argv: Optional[Sequence[str]] = None) -> None:
+    _failed_edit(cmd, infile, "COMMAND FAILED", argv)
