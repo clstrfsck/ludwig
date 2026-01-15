@@ -15,9 +15,6 @@ def test_minus_leading_parameter():
     simple_edit_test(">j-r/cat/tac/", "abcdefgcathijklmn\n", "abcdefgtachijklmn\n")
 
 def test_zero_leading_parameter():
-    # I think this is buggy.  It should not modify the file.
-    # This should work correctly:
-    #     unmodified_test("0d", "a\nb\n")
     unmodified_test("0r/cat/tac/", "abcdefgcathijklmn\n")
 
 def test_positive_leading_parameter():
@@ -29,5 +26,5 @@ def test_negative_leading_parameter():
 def test_bob_leading_parameter():
     simple_edit_test(">a<r/cat/tac/i/m1/", "abcatd\nbcat\ncat\n", "abm1tacd\nbtac\ntac\n")
 
-def test_eol_leading_parameter():
+def test_eob_leading_parameter():
     simple_edit_test(">r/cat/tac/i/m1/", "abcatd\nbcat\ncat\n", "abtacd\nbtac\ntacm1\n")
