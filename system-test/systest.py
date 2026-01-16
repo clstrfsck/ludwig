@@ -1,10 +1,10 @@
 import os
+import re
 import subprocess
-import sys
 import tempfile
+from conftest import ludwig_path
 from pathlib import Path
 from typing import Dict, Tuple, Optional, Sequence
-from conftest import ludwig_path
 
 def _write_files(base_path: str, files: Dict[str, str]) -> None:
     for relpath, content in files.items():
@@ -83,6 +83,33 @@ def run_in_sandbox(
         err = proc.stderr.decode("utf-8", errors="replace")
         return files_after, returncode, out.splitlines(), err.splitlines()
 
+def multi_file_edit_test(
+    cmd: str,
+    infiles: dict[str, str],
+    outfiles: dict[str, str],
+    stdout: Sequence[str],
+    argv: Optional[Sequence[str]] = None,
+    env: Optional[dict] = None,
+) -> None:
+    files, exit, out, err = run_in_sandbox(
+        infiles,
+        cmd,
+        ludwig_path(), (list(argv) if argv else []) + [ "test_file" ],
+        env=env
+    )
+    assert files.keys() == outfiles.keys()
+    for k in outfiles.keys():
+        file = files[k]
+        outfile = outfiles[k]
+        assert file == outfile
+    assert exit == 0
+    assert len(out) == len(stdout)
+    for i in range(len(stdout)):
+        output = stdout[i]
+        expected = out[i]
+        assert re.search(output, expected)
+    assert err == []
+
 def simple_edit_test(
     cmd: str,
     infile: str,
@@ -92,26 +119,16 @@ def simple_edit_test(
 ) -> None:
     inlines = infile.count('\n')
     outlines = outfile.count('\n')
-    files, exit, out, err = run_in_sandbox(
-        { "test_file": infile },
+    read_lines = re.escape(f"/test_file closed ({inlines} line{'s' if inlines != 1 else ''} read).") + r"\Z"
+    written_lines = re.escape(f"/test_file created ({outlines} line{'s' if outlines != 1 else ''} written).") + r"\Z"
+    multi_file_edit_test(
         cmd,
-        ludwig_path(), (list(argv) if argv else []) + [ "test_file" ],
-        env=env
+        { "test_file": infile },
+        { "test_file": outfile, "test_file~1": infile },
+        [read_lines, written_lines],
+        argv,
+        env
     )
-    assert files.keys() == {"test_file", "test_file~1"}
-    assert files["test_file~1"] == infile
-    assert files["test_file"] == outfile
-    assert exit == 0
-    assert len(out) == 2
-    if inlines == 1:
-        assert out[0].endswith(f"/test_file closed (1 line read).")
-    else:
-        assert out[0].endswith(f"/test_file closed ({inlines} lines read).")
-    if outlines == 1:
-        assert out[1].endswith(f"/test_file created (1 line written).")
-    else:
-        assert out[1].endswith(f"/test_file created ({outlines} lines written).")
-    assert err == []
 
 def unmodified_test(cmd: str, infile: str, argv: Optional[Sequence[str]] = None) -> None:
     inlines = infile.count('\n')
