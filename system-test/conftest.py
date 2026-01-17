@@ -14,6 +14,8 @@ def _compute_ludwig_path() -> Path:
             break
     if not use_path:
         use_path = Path(__file__).parent.parent / "src" / "ludwig"
+        if not use_path.exists():
+            use_path = Path(__file__).parent.parent / "ludwig"
     # normalize but don't require the file to exist during resolution
     use_path = use_path.resolve(strict=False)
 
