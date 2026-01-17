@@ -103,11 +103,15 @@ def multi_file_edit_test(
         outfile = outfiles[k]
         assert file == outfile
     assert exit == 0
-    assert len(out) == len(stdout)
+    # This bit of weirdness is to allow for more easy debugging
+    # when the --showlocals option is used.
+    len_out = len(out)
+    len_stdout = len(stdout)
+    assert len_out == len_stdout
     for i in range(len(stdout)):
-        output = stdout[i]
-        expected = out[i]
-        assert re.search(output, expected)
+        out_expected = stdout[i]
+        out_got = out[i]
+        assert re.search(out_expected, out_got)
     assert err == []
 
 def simple_edit_test(
